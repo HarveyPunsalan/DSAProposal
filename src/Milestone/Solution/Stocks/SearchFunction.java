@@ -1,21 +1,73 @@
 package Milestone.Solution.Stocks;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Scanner;
+import java.util.List;
 
-// This class is responsible for searching products in the inventory. And provides methods to search products by various criteria
+// Handles searching in inventory using BST for stock labels and linear search for other fields
 public class SearchFunction {
-    public static void searchInventory() {
-        // To search the inventory for products matching specified criteria
-        Queue<ProductInsideFile> productQueue = new LinkedList<>(ProductInsideFile.loadProductsFromFile());
+    private static Node root; // The root node of the BST for stock labels for stock labels
 
-        if (productQueue.isEmpty()) {
-            System.out.println("No stocks available for search.");
-            return;
+    // Inner class that  represents the node class for in the BST
+    private static class Node {
+        ProductInsideFile stockData;
+        Node left, right;
+
+        Node(ProductInsideFile stockData) {
+            this.stockData = stockData;
+            this.left = this.right = null;
         }
+    }
 
-        // Prompt that display search options
+    // Insert stock into BST by Stock Label
+    private static void insertIntoBST(ProductInsideFile stockData) {
+        root = insertRec(root, stockData);
+    }
+
+    private static Node insertRec(Node node, ProductInsideFile stockData) {
+        if (node == null) {
+            return new Node(stockData);
+        }
+        int compare = stockData.getStockLabel().compareToIgnoreCase(node.stockData.getStockLabel());
+        if (compare < 0) {
+            node.left = insertRec(node.left, stockData);
+        } else if (compare > 0) {
+            node.right = insertRec(node.right, stockData);
+        }
+        return node;
+    }
+
+    // Search BST for stock label
+    private static ProductInsideFile searchBST(String stockLabel) {
+        return searchBSTRec(root, stockLabel);
+    }
+
+    private static ProductInsideFile searchBSTRec(Node node, String stockLabel) {
+        if (node == null) {
+            return null; // Not found
+        }
+        // This is comparing stock labels to decide where to insert
+        int compare = stockLabel.compareToIgnoreCase(node.stockData.getStockLabel());
+        if (compare == 0) {
+            return node.stockData; // Found
+        } else if (compare < 0) {
+            return searchBSTRec(node.left, stockLabel);
+        } else {
+            return searchBSTRec(node.right, stockLabel);
+        }
+    }
+
+    // Load inventory into BST when class is first used
+    static {
+        List<ProductInsideFile> stockList = ProductInsideFile.loadProductsFromFile();
+        for (ProductInsideFile stock : stockList) {
+            insertIntoBST(stock);
+        }
+    }
+
+    // Search inventory function
+    public static void searchInventory() {
         Scanner scanner = new Scanner(System.in);
+
+        // Prompt that displays search options
         System.out.println("\n=== Search Inventory ===");
         System.out.println("Search by: ");
         System.out.println("1. Date Entered");
@@ -24,45 +76,58 @@ public class SearchFunction {
         System.out.println("4. Engine Number");
         System.out.println("5. Status");
         System.out.print("Enter your choice: ");
-        int choice = scanner.nextInt();
+        int searchOption = scanner.nextInt();
         scanner.nextLine(); // Consume newline
 
         System.out.print("Enter search keyword: ");
-        String keyword = scanner.nextLine().trim().toLowerCase();
+        String searchKeyword = scanner.nextLine().trim().toLowerCase();
 
-        boolean found = false;
+        boolean isMatchFound = false;
 
+        // Table format header
         System.out.println("\nSearch Results:");
         System.out.printf("%-15s %-20s %-15s %-20s %-10s%n", "Date Entered", "Stock Label", "Brand", "Engine Number", "Status");
         System.out.println("----------------------------------------------------------------------------------");
 
-        // Linear Search to iterate through the queue sequentially
-        for (ProductInsideFile product : productQueue) {
-            boolean match = false;
-
-            // The purpose of this is to check if the product matches the search criteria
-            switch (choice) {
-                case 1 -> match = product.getDateEntered().toLowerCase().contains(keyword);
-                case 2 -> match = product.getStockLabel().toLowerCase().contains(keyword);
-                case 3 -> match = product.getBrand().toLowerCase().contains(keyword);
-                case 4 -> match = product.getEngineNumber().toLowerCase().contains(keyword);
-                case 5 -> match = product.getStatus().toLowerCase().contains(keyword);
-                default -> {
-                    System.out.println("Invalid choice.");
-                    return;
+        if (searchOption == 2) {
+            // I use bst for searching stock label
+            ProductInsideFile foundStock = searchBST(searchKeyword);
+            if (foundStock != null) {
+                displayStock(foundStock);
+                isMatchFound = true;
+            }
+        } else {
+            // I use linear search for other search criteria
+            for (ProductInsideFile stockItem : ProductInsideFile.loadProductsFromFile()) {
+                boolean isMatch = false;
+                switch (searchOption) {
+                    case 1 -> isMatch = stockItem.getDateEntered().toLowerCase().contains(searchKeyword);
+                    case 3 -> isMatch = stockItem.getBrand().toLowerCase().contains(searchKeyword);
+                    case 4 -> isMatch = stockItem.getEngineNumber().toLowerCase().contains(searchKeyword);
+                    case 5 -> isMatch = stockItem.getStatus().toLowerCase().contains(searchKeyword);
+                    default -> {
+                        System.out.println("Invalid choice.");
+                        return;
+                    }
+                }
+                if (isMatch) {
+                    displayStock(stockItem);
+                    isMatchFound = true;
                 }
             }
-            // This displays matching products
-            if (match) {
-                System.out.printf("%-15s %-20s %-15s %-20s %-10s%n",
-                        product.getDateEntered(), product.getStockLabel(), product.getBrand(), product.getEngineNumber(), product.getStatus());
-                found = true;
-            }
         }
-        // To inform if no matches found
-        if (!found) {
+
+        if (!isMatchFound) {
             System.out.println("No matching records found.");
         }
     }
+
+    // This is used to format and prints stock details in tabular format
+    private static void displayStock(ProductInsideFile stock) {
+        System.out.printf("%-15s %-20s %-15s %-20s %-10s%n",
+                stock.getDateEntered(), stock.getStockLabel(), stock.getBrand(),
+                stock.getEngineNumber(), stock.getStatus());
+    }
 }
+
 

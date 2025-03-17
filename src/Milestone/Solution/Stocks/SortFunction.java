@@ -7,27 +7,17 @@ import java.util.List;
 
 // This class is responsible for sorting products in the inventory and provides methods to sort products by brand
 public class SortFunction {
-    public static void sortProductsByBrand() {
+    public static void sortProductsByBrand() {    // Sorts the products by brand using merge sort
         // To load products as array for sorting
         ProductInsideFile[] productsArray = loadProductsAsArray();
 
         if (productsArray.length == 0) {
-            System.out.println("No stocks available to sort.");
+            System.out.println("No stocks available to sort");
             return;
         }
 
-        // Bubble Sort by Brand
-        int n = productsArray.length;
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = 0; j < n - i - 1; j++) {
-                if (productsArray[j].getBrand().compareToIgnoreCase(productsArray[j + 1].getBrand()) > 0) {
-                    // Swap products
-                    ProductInsideFile temp = productsArray[j];
-                    productsArray[j] = productsArray[j + 1];
-                    productsArray[j + 1] = temp;
-                }
-            }
-        }
+        // Merge Sort by Brand
+        mergeSortProducts(productsArray, 0, productsArray.length - 1);
 
         // Display the sorted products that still remain in the correct order based on the entered data, stock label, brand, engine number, status
         System.out.println("\nSorted Stock List (by Brand):");
@@ -40,7 +30,70 @@ public class SortFunction {
         }
     }
 
-    // To load products from file and return as array
+    // Merge Sort implementation for sorting products
+    private static void mergeSortProducts(ProductInsideFile[] stockItems, int startIdx, int endIdx) {
+        if (startIdx < endIdx) {
+            // Find the middle point of the array
+            int midPoint = startIdx + (endIdx - startIdx) / 2;
+
+            // Sort first and second halves
+            mergeSortProducts(stockItems, startIdx, midPoint);
+            mergeSortProducts(stockItems, midPoint + 1, endIdx);
+
+            // Merge the sorted halves
+            combineProductArrays(stockItems, startIdx, midPoint, endIdx);
+        }
+    }
+
+    // Method to combine two sorted sub arrays
+    private static void combineProductArrays(ProductInsideFile[] stockItems, int startIdx, int midPoint, int endIdx) {
+        // Calculate sizes of two sub arrays to be merged
+        int firstGroupSize = midPoint - startIdx + 1;
+        int secondGroupSize = endIdx - midPoint;
+
+        // Create temp arrays
+        ProductInsideFile[] firstHalf = new ProductInsideFile[firstGroupSize];
+        ProductInsideFile[] secondHalf = new ProductInsideFile[secondGroupSize];
+
+        // Then this copy data to temp arrays
+        for (int idx = 0; idx < firstGroupSize; idx++)
+            firstHalf[idx] = stockItems[startIdx + idx];
+        for (int idx = 0; idx < secondGroupSize; idx++)
+            secondHalf[idx] = stockItems[midPoint + 1 + idx];
+
+        // Then this will merge the sorted sub arrays back into the main array
+        int firstCounter = 0;
+        int secondCounter = 0;
+        int mergedCounter = startIdx;
+
+        while (firstCounter < firstGroupSize && secondCounter < secondGroupSize) {
+            // The usage of this is to compare brands case-insensitive manner
+            if (firstHalf[firstCounter].getBrand().compareToIgnoreCase(secondHalf[secondCounter].getBrand()) <= 0) {
+                stockItems[mergedCounter] = firstHalf[firstCounter];
+                firstCounter++;
+            } else {
+                stockItems[mergedCounter] = secondHalf[secondCounter];
+                secondCounter++;
+            }
+            mergedCounter++;
+        }
+
+        // Copy remaining elements of firstHalf if any
+        while (firstCounter < firstGroupSize) {
+            stockItems[mergedCounter] = firstHalf[firstCounter];
+            firstCounter++;
+            mergedCounter++;
+        }
+
+        // Copy remaining elements of secondHalf if any
+        while (secondCounter < secondGroupSize) {
+            stockItems[mergedCounter] = secondHalf[secondCounter];
+            secondCounter++;
+            mergedCounter++;
+        }
+    }
+
+    // To load products from file and return it as array
     private static ProductInsideFile[] loadProductsAsArray() {
         List<ProductInsideFile> productList = new ArrayList<>();
         DataFilePath dataFilePath = new DataFilePath();
@@ -75,7 +128,7 @@ public class SortFunction {
             System.err.println("Error reading the file: " + e.getMessage());
         }
 
-        return productList.toArray(new ProductInsideFile[0]); // Convert List to Array
+        return productList.toArray(new ProductInsideFile[0]); // to convert the list to an array before returning
     }
 }
 

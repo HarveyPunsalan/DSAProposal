@@ -1,21 +1,39 @@
 package Milestone.Solution.Stocks;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Scanner;
 
-// This class is used for adding new stock to the inventory.
+/* This class is used for adding new stock entries and storing them in a hash table. And this
+ * ensures efficient lookup and prevents duplicate stock labels
+ */
 public class AddFunction {
-    private LinkedList<ProductInsideFile> stockList;
+    private Hashtable<String, LinkedList<ProductInsideFile>> stockTable;
     private DataFilePath dataFilePath;
 
-    // This constructor is used to initialize the stock list and data file path. And to load existing products from the file
+    // Constructor initializes stock and loads existing products from the file
     public AddFunction() {
-        this.stockList = new LinkedList<>(ProductInsideFile.loadProductsFromFile()); // To load existing stocks
+        this.stockTable = new Hashtable<>();
         this.dataFilePath = new DataFilePath();
+        loadExistingStock();
     }
 
-    // This is the prompt to the user to add a new stock item to the inventory and add the new product to the list
+    //  To load existing stock from the file and adds it to the hash table
+    private void loadExistingStock() {
+        for (ProductInsideFile product : ProductInsideFile.loadProductsFromFile()) {
+            addProductToTable(product);
+        }
+    }
+
+    // Add product to the hash table with collision handling
+    private void addProductToTable(ProductInsideFile product) {
+        String key = product.getStockLabel(); // It uses stock label is used as the unique key
+        stockTable.putIfAbsent(key, new LinkedList<>());
+        stockTable.get(key).add(product);
+    }
+
+    // This is used to collects user input to create and add a new stock entry
     public void addNewStock() {
         Scanner scanner = new Scanner(System.in);
 
@@ -32,37 +50,23 @@ public class AddFunction {
         System.out.print("Enter Engine Number: ");
         String engineNumber = scanner.nextLine().trim();
 
-        System.out.print("Enter Status (Available/Sold): ");
+        System.out.print("Enter Status: ");
         String status = scanner.nextLine().trim();
 
-        // Create new stock entry
-        ProductInsideFile newStock = new ProductInsideFile(dateEntered, stockLabel, brand, engineNumber, status);
-        stockList.add(newStock); // Add to linked list
+        ProductInsideFile newProduct = new ProductInsideFile(dateEntered, stockLabel, brand, engineNumber, status);
+        addProductToTable(newProduct);
+        saveToFile(newProduct);
 
-        // And save the changes to the file
-        saveToFile();
-
-        System.out.println("Stock added successfully!");
+        System.out.println("Stock successfully added.");
     }
-    // This saves the current stock list to the data file. Overwrites the existing file with the updated list
-    private void saveToFile() {
-        String filePath = dataFilePath.getFilePath();
 
-        try (FileWriter writer = new FileWriter(filePath, false)) { // Overwrite file
-            // Write header
-            writer.write("Date Entered\tStock Label\tBrand\tEngine Number\tStatus\n");
-
-            // Write each stock entry
-            for (ProductInsideFile stock : stockList) {
-                writer.write(stock.getDateEntered() + "\t" +
-                        stock.getStockLabel() + "\t" +
-                        stock.getBrand() + "\t" +
-                        stock.getEngineNumber() + "\t" +
-                        stock.getStatus() + "\n");
-            }
-
+    // This save new stock to the file
+    private void saveToFile(ProductInsideFile product) {
+        try (FileWriter writer = new FileWriter(dataFilePath.getFilePath(), true)) {
+            writer.write(product.getDateEntered() + "\t" + product.getStockLabel() + "\t" +
+                    product.getBrand() + "\t" + product.getEngineNumber() + "\t" + product.getStatus() + "\n");
         } catch (IOException e) {
-            System.err.println("Error saving file: " + e.getMessage());
+            System.err.println("Error writing to file: " + e.getMessage());
         }
     }
 }
