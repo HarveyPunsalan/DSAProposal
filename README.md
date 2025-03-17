@@ -1,0 +1,1 @@
+This repo has two branches named Milestone1 and Milestone2. I intentionally didn’t put the code in the main branch so that it would be easier to compare during the terminal assessment. So that I can more easily determine what to recommend for MotorPH's inventory management.
